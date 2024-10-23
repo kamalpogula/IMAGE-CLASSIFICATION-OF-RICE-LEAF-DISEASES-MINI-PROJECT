@@ -1,0 +1,109 @@
+from google.colab import drive
+drive.mount('/content/drive')
+
+# Import libraries
+import pandas as pd
+import numpy as np
+import os
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+# Define image dimensions
+IMAGE_HEIGHT = 224
+IMAGE_WIDTH = 224
+IMAGE_CHANNELS = 3
+
+# List the directories for the datasets
+leaf_smut_list = os.listdir('/content/drive/MyDrive/Colab Notebooks/Pembelajaran Mesin/ML_TugasKelompok/rice_leaf_diseases/Leaf smut')
+brown_spot_list = os.listdir('/content/drive/MyDrive/Colab Notebooks/Pembelajaran Mesin/ML_TugasKelompok/rice_leaf_diseases/Brown spot')
+bacterial_leaf_blight_list = os.listdir('/content/drive/MyDrive/Colab Notebooks/Pembelajaran Mesin/ML_TugasKelompok/rice_leaf_diseases/Bacterial leaf blight')
+
+# Print the number of images in each category
+print(len(leaf_smut_list))
+print(len(brown_spot_list))
+print(len(bacterial_leaf_blight_list))
+
+# Create dataframes for each category
+df_leaf_smut = pd.DataFrame(leaf_smut_list, columns=['image'])
+df_leaf_smut['target'] = 'leaf_smut'
+
+df_brown_spot = pd.DataFrame(brown_spot_list, columns=['image'])
+df_brown_spot['target'] = 'brown_spot'
+
+df_bacterial_leaf_blight = pd.DataFrame(bacterial_leaf_blight_list, columns=['image'])
+df_bacterial_leaf_blight['target'] = 'bacterial_leaf_blight'
+
+# Create a validation set for each class
+df_leaf_smut_val = df_leaf_smut.sample(n=6, random_state=101)
+df_brown_spot_val = df_brown_spot.sample(n=6, random_state=101)
+df_bacterial_leaf_blight_val = df_bacterial_leaf_blight.sample(n=6, random_state=101)
+
+# Print validation set sizes
+print("Data Val")
+print(len(df_leaf_smut_val))
+print(len(df_brown_spot_val))
+print(len(df_bacterial_leaf_blight_val))
+
+# Create the train set for each class
+val_list = list(df_leaf_smut_val['image'])
+df_leaf_smut_train = df_leaf_smut[~df_leaf_smut['image'].isin(val_list)]
+
+val_list = list(df_brown_spot_val['image'])
+df_brown_spot_train = df_brown_spot[~df_brown_spot['image'].isin(val_list)]
+
+val_list = list(df_bacterial_leaf_blight_val['image'])
+df_bacterial_leaf_blight_train = df_bacterial_leaf_blight[~df_bacterial_leaf_blight['image'].isin(val_list)]
+
+# Print train set sizes
+print("Data Train")
+print(len(df_leaf_smut_train))
+print(len(df_brown_spot_train))
+print(len(df_bacterial_leaf_blight_train))
+
+# Create combined dataframes
+df_data = pd.concat([df_leaf_smut, df_brown_spot, df_bacterial_leaf_blight], axis=0).reset_index(drop=True)
+df_train = pd.concat([df_leaf_smut_train, df_brown_spot_train, df_bacterial_leaf_blight_train], axis=0).reset_index(drop=True)
+df_val = pd.concat([df_leaf_smut_val, df_brown_spot_val, df_bacterial_leaf_blight_val], axis=0).reset_index(drop=True)
+
+# Shuffle the data
+df_data = shuffle(df_data)
+df_train = shuffle(df_train)
+df_val = shuffle(df_val)
+
+# Print shapes of the dataframes
+print(df_data.shape)
+print(df_train.shape)
+print(df_val.shape)
+
+# Print value counts for targets
+print(df_data['target'].value_counts())
+print(df_train['target'].value_counts())
+print(df_val['target'].value_counts())
+
+# Combine val and train sets
+val_len = len(df_val)
+train_len = len(df_train)
+df_combined = pd.concat(objs=[df_val, df_train], axis=0).reset_index(drop=True)
+
+# Create dummy variables for the target
+df_combined = pd.get_dummies(df_combined, columns=['target'])
+
+# Separate the train and val sets
+df_val = df_combined[:val_len]
+df_train = df_combined[val_len:]
+
+# Print final shapes
+print(df_train.shape)
+print(df_val.shape)
+
+# Display the head of the dataframes
+print(df_combined.head())
+print(df_train.head())
+print(df_val.head())
+
+# Save dataframes to CSV
+df_combined.to_csv('df_combined.csv.gz', compression='gzip', index=False)
+df_train.to_csv('df_train.csv.gz', compression='gzip', index=False)
+df_val.to_csv('df_val.csv.gz', compression='gzip', index=False)
